@@ -76,3 +76,12 @@
     - groups[restapi_group_name] is defined
     - inventory_hostname == groups.mons|last
     - not mon_containerized_deployment_with_kv
+
+
+- include: set_osd_pool_default_pg_num.yml
+
+# create openstack only when all mons are up.
+- include: ../openstack_config.yml
+  when:
+    - openstack_config
+    - inventory_hostname == groups.mons|last

@@ -1,14 +1,35 @@
 ---
-- name: create openstack pool
+- name: create openstack pool (not containerized deployment)
   command: ceph --cluster {{ cluster }} osd pool create {{ item.name }} {{ item.pg_num }}
   with_items: "{{ openstack_pools | unique }}"
   changed_when: false
   failed_when: false
+  when: not mon_containerized_deployment
 
-- name: create openstack keys
+- name: create openstack keys (not containerized deployment)
   command: ceph --cluster {{ cluster }} auth get-or-create {{ item.name }} {{ item.value }} -o /etc/ceph/{{ cluster }}.{{ item.name }}.keyring
   args:
     creates: /etc/ceph/{{ cluster }}.{{ item.name }}.keyring
   with_items: "{{ openstack_keys }}"
   changed_when: false
-  when: cephx
+  when:
+    - cephx
+    - not mon_containerized_deployment
+
+- name: create openstack pool (containerized deployment)
+  command: docker exec {{ ansible_hostname }} ceph --cluster {{ cluster }} osd pool create {{ item.name }} {{ item.pg_num }}
+  with_items: "{{ openstack_pools | unique }}"
+  changed_when: false
+  failed_when: false
+  when:
+  - mon_containerized_deployment
+
+- name: create openstack keys (containerized deployment)
+  command: docker exec {{ ansible_hostname }} ceph --cluster {{ cluster }} auth get-or-create {{ item.name }} {{ item.value }} -o /etc/ceph/{{ cluster }}.{{ item.name }}.keyring
+  args:
+    creates: /etc/ceph/{{ cluster }}.{{ item.name }}.keyring
+  with_items: "{{ openstack_keys }}"
+  changed_when: false
+  when:
+  - cephx
+  - mon_containerized_deployment
